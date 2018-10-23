@@ -1,4 +1,4 @@
-from apisoptimizer.colony import Colony
-from apisoptimizer.bee import Bee
-from apisoptimizer.parameter import Parameter
-__version__ = '0.1.0'
+from ApisOptimizer.colony import Colony
+from ApisOptimizer.bee import Bee
+from ApisOptimizer.parameter import Parameter
+__version__ = '0.1.1'

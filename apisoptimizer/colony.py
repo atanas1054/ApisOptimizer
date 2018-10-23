@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# colony.py (0.1.0)
+# colony.py (0.1.1)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #
@@ -12,11 +12,10 @@ from multiprocessing import Pool
 
 # 3rd party, open src. imports
 from numpy.random import choice
-from colorlogging import log
 
 # ApisOptimizer imports
-from apisoptimizer.bee import Bee
-from apisoptimizer.parameter import Parameter
+from ApisOptimizer.bee import Bee
+from ApisOptimizer.parameter import Parameter
 
 
 class Colony:
@@ -55,9 +54,6 @@ class Colony:
         '''
 
         self.__params.append(Parameter(name, min_val, max_val))
-        log('info', 'Parameter {} added with bounds {} - {}'.format(
-            name, min_val, max_val
-        ))
 
     def initialize(self):
         '''
@@ -70,7 +66,7 @@ class Colony:
                 'Parameters must be added before bee positions are found'
             )
 
-        if self.__num_processes > 0:
+        if self.__num_processes > 1:
             emp_process_pool = Pool(processes=self.__num_processes)
             emp_results = []
 
@@ -81,7 +77,7 @@ class Colony:
 
             param_dict = self.__create_param_dict()
 
-            if self.__num_processes > 0:
+            if self.__num_processes > 1:
                 emp_results.append(emp_process_pool.apply_async(
                     self._start_process,
                     [param_dict, self.__obj_fn, self.__obj_fn_args]
@@ -95,7 +91,7 @@ class Colony:
                     is_employer=True
                 ))
 
-        if self.__num_processes > 0:
+        if self.__num_processes > 1:
             emp_process_pool.close()
             emp_process_pool.join()
             onl_process_pool = Pool(processes=self.__num_processes)
@@ -118,7 +114,7 @@ class Colony:
             chosen_employer = choice(self.__bees, p=employer_probabilities)
             neighbor_food = chosen_employer.mutate()
 
-            if self.__num_processes > 0:
+            if self.__num_processes > 1:
                 onl_results.append(onl_process_pool.apply_async(
                     self._start_process,
                     [neighbor_food, self.__obj_fn, self.__obj_fn_args]
@@ -131,7 +127,7 @@ class Colony:
                     len(self.__params) * self.__num_employers
                 ))
 
-        if self.__num_processes > 0:
+        if self.__num_processes > 1:
             onl_process_pool.close()
             onl_process_pool.join()
             for bee in onl_results:
@@ -143,7 +139,6 @@ class Colony:
 
         # Append onlookers to employers
         self.__bees.extend(onlookers)
-        log('info', 'Initial positions for employers and onlookers calculated')
 
     def run(self, num_iterations):
         '''
@@ -154,15 +149,13 @@ class Colony:
         if len(self.__bees) == 0:
             raise Exception('Initial bee positions must be generated first')
 
-        log('info', 'Running colony for {} iterations'.format(num_iterations))
-
         for iteration in range(num_iterations):
 
             bee_probabilities = self.__calc_bee_probs()
 
             next_generation = []
 
-            if self.__num_processes > 0:
+            if self.__num_processes > 1:
                 new_calculations = Pool(processes=self.__num_processes)
                 new_employer_results = []
                 new_onlooker_results = []
@@ -179,7 +172,7 @@ class Colony:
 
                         new_food = self.__create_param_dict()
 
-                        if self.__num_processes > 0:
+                        if self.__num_processes > 1:
                             new_employer_results.append(
                                 new_calculations.apply_async(
                                     self._start_process,
@@ -206,7 +199,7 @@ class Colony:
                         chosen_bee = choice(self.__bees, p=bee_probabilities)
                         neighbor_food = chosen_bee.mutate()
 
-                        if self.__num_processes > 0:
+                        if self.__num_processes > 1:
                             new_onlooker_results.append(
                                 new_calculations.apply_async(
                                     self._start_process,
@@ -234,7 +227,7 @@ class Colony:
                 #   its current one
                 neighbor_food = bee.mutate()
 
-                if self.__num_processes > 0:
+                if self.__num_processes > 1:
                     current_positions.append(bee)
                     new_position_results.append(new_calculations.apply_async(
                         self._start_process,
@@ -272,7 +265,7 @@ class Colony:
 
             # If multiprocessing, finish processes, run comparisons, create
             #   next generation
-            if self.__num_processes > 0:
+            if self.__num_processes > 1:
 
                 new_calculations.close()
                 new_calculations.join()
@@ -321,28 +314,14 @@ class Colony:
                     params = ()
                     for param in self.__best_params:
                         params += (self.__best_params[param].value,)
-                    log('info', 'New best fitness: {}'.format(
-                        self.__best_fitness
-                    ))
-                    log('info', 'New best parameters: {}'.format(
-                        params
-                    ))
 
             # New bees = bees generated this iteration
             self.__bees = next_generation
 
-            log('info', 'Average fitness after iteration {}: {}'.format(
-                iteration + 1,
-                self.__ave_bee_fitness()
-            ))
-
         # Iterations done, return best parameters
-        log('info', 'Colony run complete')
-        log('info', 'Best fitness: {}'.format(self.__best_fitness))
         params = ()
         for param in self.__best_params:
             params += (self.__best_params[param].value,)
-        log('info', 'Best parameters: {}'.format(params))
         return params
 
     @staticmethod
