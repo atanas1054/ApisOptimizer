@@ -149,7 +149,7 @@ class Colony:
         if len(self.__bees) == 0:
             raise Exception('Initial bee positions must be generated first')
 
-        for iteration in range(num_iterations):
+        for _ in range(num_iterations):
 
             bee_probabilities = self.__calc_bee_probs()
 
