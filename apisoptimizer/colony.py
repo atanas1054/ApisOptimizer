@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# colony.py (0.1.1)
+# colony.py (0.2.0)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #
@@ -41,6 +41,22 @@ class Colony:
         self.__num_processes = num_processes
         self.__best_fitness = 0
         self.__best_params = None
+
+    @property
+    def best_fitness(self):
+        '''
+        Fitness score of best performing bee so far
+        '''
+
+        return self.__best_fitness
+
+    @property
+    def best_parameters(self):
+        '''
+        Parameters of best performing bee so far
+        '''
+
+        return self.__best_params
 
     def add_param(self, name, min_val, max_val):
         '''
@@ -139,190 +155,174 @@ class Colony:
 
         # Append onlookers to employers
         self.__bees.extend(onlookers)
+        self.__determine_best_bee()
 
-    def run(self, num_iterations):
+    def search(self):
         '''
-        Run the Colony's search/abandon algorithm for *num_iterations*
-        iterations
+        Run the colony's search/follow/abandon process, creates next
+        generation of bees
         '''
 
         if len(self.__bees) == 0:
             raise Exception('Initial bee positions must be generated first')
 
-        for _ in range(num_iterations):
+        bee_probabilities = self.__calc_bee_probs()
 
-            bee_probabilities = self.__calc_bee_probs()
+        next_generation = []
 
-            next_generation = []
+        if self.__num_processes > 1:
+            new_calculations = Pool(processes=self.__num_processes)
+            new_employer_results = []
+            new_onlooker_results = []
+            new_position_results = []
+            current_positions = []
+
+        for bee in self.__bees:
+
+            # If bee is marked for abandonment
+            if bee.abandon:
+
+                # If the bee is an employer, scout for new food source
+                if bee.is_employer:
+
+                    new_food = self.__create_param_dict()
+
+                    if self.__num_processes > 1:
+                        new_employer_results.append(
+                            new_calculations.apply_async(
+                                self._start_process,
+                                [
+                                    new_food,
+                                    self.__obj_fn,
+                                    self.__obj_fn_args
+                                ]
+                            )
+                        )
+
+                    else:
+                        next_generation.append(Bee(
+                            new_food,
+                            self.__obj_fn(new_food, self.__obj_fn_args),
+                            len(self.__params) * self.__num_employers,
+                            is_employer=True
+                        ))
+
+                    continue
+
+                # Otherwise, bee is an onlooker, choose a bee to work near
+                else:
+                    chosen_bee = choice(self.__bees, p=bee_probabilities)
+                    neighbor_food = chosen_bee.mutate()
+
+                    if self.__num_processes > 1:
+                        new_onlooker_results.append(
+                            new_calculations.apply_async(
+                                self._start_process,
+                                [
+                                    neighbor_food,
+                                    self.__obj_fn,
+                                    self.__obj_fn_args
+                                ]
+                            )
+                        )
+
+                    else:
+                        next_generation.append(Bee(
+                            neighbor_food,
+                            self.__obj_fn(
+                                neighbor_food,
+                                self.__obj_fn_args
+                            ),
+                            len(self.__params) * self.__num_employers
+                        ))
+
+                    continue
+
+            # Not marked for abandonment, search for a food source near
+            #   its current one
+            neighbor_food = bee.mutate()
 
             if self.__num_processes > 1:
-                new_calculations = Pool(processes=self.__num_processes)
-                new_employer_results = []
-                new_onlooker_results = []
-                new_position_results = []
-                current_positions = []
+                current_positions.append(bee)
+                new_position_results.append(new_calculations.apply_async(
+                    self._start_process,
+                    [neighbor_food, self.__obj_fn, self.__obj_fn_args]
+                ))
 
-            for bee in self.__bees:
+            else:
+                obj_fn_val = self.__obj_fn(
+                    neighbor_food,
+                    self.__obj_fn_args
+                )
 
-                # If bee is marked for abandonment
-                if bee.abandon:
-
-                    # If the bee is an employer, scout for new food source
+                # If new food is better than current food
+                if bee.is_better_food(obj_fn_val):
                     if bee.is_employer:
-
-                        new_food = self.__create_param_dict()
-
-                        if self.__num_processes > 1:
-                            new_employer_results.append(
-                                new_calculations.apply_async(
-                                    self._start_process,
-                                    [
-                                        new_food,
-                                        self.__obj_fn,
-                                        self.__obj_fn_args
-                                    ]
-                                )
-                            )
-
-                        else:
-                            next_generation.append(Bee(
-                                new_food,
-                                self.__obj_fn(new_food, self.__obj_fn_args),
-                                len(self.__params) * self.__num_employers,
-                                is_employer=True
-                            ))
-
-                        continue
-
-                    # Otherwise, bee is an onlooker, choose a bee to work near
+                        bee = Bee(
+                            neighbor_food,
+                            obj_fn_val,
+                            len(self.__params) * self.__num_employers,
+                            is_employer=True
+                        )
                     else:
-                        chosen_bee = choice(self.__bees, p=bee_probabilities)
-                        neighbor_food = chosen_bee.mutate()
+                        bee = Bee(
+                            neighbor_food,
+                            obj_fn_val,
+                            len(self.__params) * self.__num_employers
+                        )
 
-                        if self.__num_processes > 1:
-                            new_onlooker_results.append(
-                                new_calculations.apply_async(
-                                    self._start_process,
-                                    [
-                                        neighbor_food,
-                                        self.__obj_fn,
-                                        self.__obj_fn_args
-                                    ]
-                                )
-                            )
+                # New food not better, check if food source is exhausted
+                #   (if exhausted, mark for abandonment)
+                else:
+                    bee.check_abandonment()
 
-                        else:
-                            next_generation.append(Bee(
-                                neighbor_food,
-                                self.__obj_fn(
-                                    neighbor_food,
-                                    self.__obj_fn_args
-                                ),
-                                len(self.__params) * self.__num_employers
-                            ))
+                next_generation.append(bee)
 
-                        continue
+        # If multiprocessing, finish processes, run comparisons, create
+        #   next generation
+        if self.__num_processes > 1:
 
-                # Not marked for abandonment, search for a food source near
-                #   its current one
-                neighbor_food = bee.mutate()
+            new_calculations.close()
+            new_calculations.join()
 
-                if self.__num_processes > 1:
-                    current_positions.append(bee)
-                    new_position_results.append(new_calculations.apply_async(
-                        self._start_process,
-                        [neighbor_food, self.__obj_fn, self.__obj_fn_args]
-                    ))
+            for bee in new_employer_results:
+                next_generation.append(Bee(
+                    bee.get()[0],
+                    bee.get()[1],
+                    len(self.__params) * self.__num_employers,
+                    is_employer=True
+                ))
+
+            for bee in new_onlooker_results:
+                next_generation.append(Bee(
+                    bee.get()[0],
+                    bee.get()[1],
+                    len(self.__params) * self.__num_employers
+                ))
+
+            for idx, bee in enumerate(current_positions):
+                if bee.is_better_food(new_position_results[idx].get()[1]):
+                    if bee.is_employer:
+                        next_generation.append(Bee(
+                            new_position_results[idx].get()[0],
+                            new_position_results[idx].get()[1],
+                            len(self.__params) * self.__num_employers,
+                            is_employer=True
+                        ))
+                    else:
+                        next_generation.append(Bee(
+                            new_position_results[idx].get()[0],
+                            new_position_results[idx].get()[1],
+                            len(self.__params) * self.__num_employers
+                        ))
 
                 else:
-                    obj_fn_val = self.__obj_fn(
-                        neighbor_food,
-                        self.__obj_fn_args
-                    )
-
-                    # If new food is better than current food
-                    if bee.is_better_food(obj_fn_val):
-                        if bee.is_employer:
-                            bee = Bee(
-                                neighbor_food,
-                                obj_fn_val,
-                                len(self.__params) * self.__num_employers,
-                                is_employer=True
-                            )
-                        else:
-                            bee = Bee(
-                                neighbor_food,
-                                obj_fn_val,
-                                len(self.__params) * self.__num_employers
-                            )
-
-                    # New food not better, check if food source is exhausted
-                    #   (if exhausted, mark for abandonment)
-                    else:
-                        bee.check_abandonment()
-
+                    bee.check_abandonment()
                     next_generation.append(bee)
 
-            # If multiprocessing, finish processes, run comparisons, create
-            #   next generation
-            if self.__num_processes > 1:
-
-                new_calculations.close()
-                new_calculations.join()
-
-                for bee in new_employer_results:
-                    next_generation.append(Bee(
-                        bee.get()[0],
-                        bee.get()[1],
-                        len(self.__params) * self.__num_employers,
-                        is_employer=True
-                    ))
-
-                for bee in new_onlooker_results:
-                    next_generation.append(Bee(
-                        bee.get()[0],
-                        bee.get()[1],
-                        len(self.__params) * self.__num_employers
-                    ))
-
-                for idx, bee in enumerate(current_positions):
-                    if bee.is_better_food(new_position_results[idx].get()[1]):
-                        if bee.is_employer:
-                            next_generation.append(Bee(
-                                new_position_results[idx].get()[0],
-                                new_position_results[idx].get()[1],
-                                len(self.__params) * self.__num_employers,
-                                is_employer=True
-                            ))
-                        else:
-                            next_generation.append(Bee(
-                                new_position_results[idx].get()[0],
-                                new_position_results[idx].get()[1],
-                                len(self.__params) * self.__num_employers
-                            ))
-
-                    else:
-                        bee.check_abandonment()
-                        next_generation.append(bee)
-
-            # Evaluate bee performance, finding best performer if exists
-            for bee in next_generation:
-
-                if bee.fitness_score > self.__best_fitness:
-                    self.__best_fitness = bee.fitness_score
-                    self.__best_params = bee.param_dict
-                    params = ()
-                    for param in self.__best_params:
-                        params += (self.__best_params[param].value,)
-
-            # New bees = bees generated this iteration
-            self.__bees = next_generation
-
-        # Iterations done, return best parameters
-        params = ()
-        for param in self.__best_params:
-            params += (self.__best_params[param].value,)
-        return params
+        # New bees = bees generated this iteration
+        self.__bees = next_generation
+        self.__determine_best_bee()
 
     @staticmethod
     def _start_process(param_dict, obj_fn, obj_fn_args):
@@ -333,6 +333,20 @@ class Colony:
 
         obj_fn_val = obj_fn(param_dict, obj_fn_args)
         return (param_dict, obj_fn_val)
+
+    def __determine_best_bee(self):
+        '''
+        Determines if any bee from the current generation has performed better
+        than the best bee so far
+        '''
+
+        for bee in self.__bees:
+            if bee.fitness_score > self.__best_fitness:
+                self.__best_fitness = bee.fitness_score
+                params = {}
+                for param in bee.param_dict:
+                    params[param] = bee.param_dict[param].value
+                self.__best_params = params
 
     def __ave_bee_fitness(self):
         '''

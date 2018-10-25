@@ -60,4 +60,7 @@ if __name__ == '__main__':
     abc.add_param('hidden_2', 8, 36)
     abc.add_param('vme', 500, 25000)
     abc.initialize()
-    abc.run(5)
+    for _ in range(5):
+        abc.search()
+        print(abc.best_fitness)
+        print(abc.best_parameters)

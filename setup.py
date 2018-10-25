@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='apisoptimizer',
-    version='0.1.1',
+    version='0.2.0',
     description='Artificial bee colony framework for tuning arbitrary functions',
     url='http://github.com/tjkessler/apisoptimizer',
     author='Travis Kessler',

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# bee.py (0.1.1)
+# bee.py (0.2.0)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #

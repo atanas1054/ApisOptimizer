@@ -16,4 +16,7 @@ if __name__ == '__main__':
     abc.add_param('int2', 0, 10)
     abc.add_param('int3', 0, 10)
     abc.initialize()
-    abc.run(50)
+    for _ in range(10):
+        abc.search()
+        print(abc.best_fitness)
+        print(abc.best_parameters)
