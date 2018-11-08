@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# parameter.py (0.2.0)
+# parameter.py (0.2.1)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #
@@ -19,9 +19,12 @@ class Parameter:
 
     def __init__(self, name, min_val, max_val):
         '''
-        *name*      -   name of the parameter
-        *min_val*   -   minimum value allowed for the parameter
-        *max_val*   -   maximum value allowed for the parameter
+        Parameter object: houses information for a parameter added to a Colony
+
+        Args:
+            name (str): name of the paramter
+            min_val (int or float): minimum value allowed for the parameter
+            max_val (int or float): maximum value allowed for the parameter
         '''
 
         self.value = None

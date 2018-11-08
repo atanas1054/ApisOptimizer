@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# colony.py (0.2.0)
+# colony.py (0.2.1)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #
@@ -14,8 +14,8 @@ from multiprocessing import Pool
 from numpy.random import choice
 
 # ApisOptimizer imports
-from apisoptimizer.bee import Bee
-from apisoptimizer.parameter import Parameter
+from apisoptimizer import Bee
+from apisoptimizer import Parameter
 
 
 class Colony:
@@ -23,12 +23,15 @@ class Colony:
     def __init__(self, num_employers, objective_fn, obj_fn_args=None,
                  num_processes=1):
         '''
-        *num_employers*     -   number of initial employer bees
-        *objective_fn*      -   function to optimize
-        *obj_fn_args*       -   additional arguments passed to the objective
-                                function
-        *num_processes*     -   number of concurrent processes used to
-                                generate bees
+        Colony object: optimizes parameters for supplied objective function
+
+        Args:
+            num_employers (int): number of employer bees (and initial food)
+            objective_fn (callable): user supplied function to determine
+                                     fitness
+            obj_fn_args (any): any additional arguments for user's objective
+                               function
+            num_processes (int): number of concurrent processes for bee eval
         '''
 
         if not callable(objective_fn):
@@ -62,11 +65,10 @@ class Colony:
         '''
         Add a parameter for the Colony to optimize
 
-        *name*      -   name of the parameter
-        *min_val*   -   minimum value allowed for the parameter
-        *max_val*   -   maximum value allowed for the parameter
-
-        Note: min_val and max_val must have the same dtype
+        Args:
+            name (str): name of the parameter
+            min_val (int or float): minimum value allowed
+            max_val (int or float): maximum value allowed
         '''
 
         self.__params.append(Parameter(name, min_val, max_val))
@@ -327,8 +329,15 @@ class Colony:
     @staticmethod
     def _start_process(param_dict, obj_fn, obj_fn_args):
         '''
-        Static method: starts a process to evalutate parameters *param_dict*
-        for objective function *obj_fn*
+        Static method: starts a process to evalutate parameters
+
+        Args:
+            param_dict (dictionary): dictionary of Parameter objects
+            obj_fn (callable): objective function for evaluating Parameters
+            obj_fn_args (any): any additional arguments for obj_fn
+
+        Returns:
+            tuple: (param_dict, value derived from objective function)
         '''
 
         obj_fn_val = obj_fn(param_dict, obj_fn_args)
@@ -337,7 +346,7 @@ class Colony:
     def __determine_best_bee(self):
         '''
         Determines if any bee from the current generation has performed better
-        than the best bee so far
+        than the best bee so far; updates object properties
         '''
 
         for bee in self.__bees:
@@ -357,9 +366,10 @@ class Colony:
 
     def __calc_bee_probs(self):
         '''
-        Returns a list of probabilities (sum == 1) for each currently working
-        bee. Bees that require new assignments will proportionally choose bees
-        with better fitness scores.
+        Determines probabilities that bees will be followed by onlookers
+
+        Returns:
+            list: list of probabilities (float), sum = 1
         '''
 
         bee_probabilities = []
@@ -373,6 +383,9 @@ class Colony:
         '''
         Generates a new parameter dictionary, random assignments for each
         Colony parameter
+
+        Returns:
+            dictionary: dictionary of parameter names and Parameter objects
         '''
 
         param_dict = {}

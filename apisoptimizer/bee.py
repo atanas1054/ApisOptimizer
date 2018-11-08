@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# bee.py (0.2.0)
+# bee.py (0.2.1)
 #
 # Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
 #
@@ -15,13 +15,16 @@ class Bee:
 
     def __init__(self, param_dict, obj_fn_val, stay_limit, is_employer=False):
         '''
-        *param_dict*    -   dictionary of Parameter objects
-        *obj_fn_val*    -   value obtained by objective function when run
-                            with parameters in *param_dict*
-        *stay_limit*    -   how many neighboring food sources to search before
-                            the current one is abandoned (if no better food
-                            found)
-        *is_employer*   -   distinguishes an employer bee from an onlooker bee
+        Bee object for employer and onlooker bees
+
+        Args:
+            param_dict (dictionary): dictionary of Parameter objects
+            obj_fn_val (int or float): value obtained by running the colony's
+                                       objective function on the parameters
+                                       found in param_dict
+            stay_limit (int): how many neighboring food sources to search
+                              before the current one is abandoned
+            is_employer (bool): distinguishes an employer from an onlooker
         '''
 
         self.param_dict = param_dict
@@ -33,7 +36,10 @@ class Bee:
 
     def mutate(self):
         '''
-        Mutates one parameter in self.param_dict, returns modified param_dict
+        Mutates one random parameter in self.param_dict
+
+        Returns:
+            dictionary: new param_dict with one mutated parameter
         '''
 
         param_to_change = list(self.param_dict.keys())[
@@ -45,8 +51,13 @@ class Bee:
 
     def is_better_food(self, obj_fn_val):
         '''
-        Determines if fitness score derived from *obj_fn_val* is better than
-        than the bee's current fitness score for a given food source
+        Determines if a new food source is better than the current one
+
+        Args:
+            obj_fn_val (int or float): new objective function value
+
+        Returns:
+            bool: True if better, False if not
         '''
 
         if self.__calc_fitness_score(obj_fn_val) > self.fitness_score:
@@ -56,8 +67,8 @@ class Bee:
 
     def check_abandonment(self):
         '''
-        Determines whether to abandon the current food source if no better
-        neighbors are found after len(self.param_dict) searches
+        Adds 1 to the number of times the bee has stayed at the current food
+        source; if max number of stays has been reached, mark for abandonment
         '''
 
         self.__stay_count += 1
@@ -67,8 +78,13 @@ class Bee:
     @staticmethod
     def __calc_fitness_score(obj_fn_val):
         '''
-        Derive fitness score from *obj_fn_val* obtained from objective
-        function
+        Derive fitness score
+
+        Args:
+            obj_fn_val (int or float): value from objective funtion
+
+        Returns:
+            float: fitness score, i.e. normalized objective function value
         '''
 
         if obj_fn_val >= 0:
