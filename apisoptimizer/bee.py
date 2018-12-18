@@ -34,9 +34,12 @@ class Bee:
         self.__stay_limit = stay_limit
         self.abandon = False
 
-    def mutate(self):
+    def mutate(self, bee):
         '''
-        Mutates one random parameter in self.param_dict
+        Crosses one parameter with another (well performing) bee
+
+        Args:
+            bee (Bee): bee to cross parameter with
 
         Returns:
             dictionary: new param_dict with one mutated parameter
@@ -46,7 +49,7 @@ class Bee:
             randint(0, len(self.param_dict) - 1)
         ]
         new_param_dict = deepcopy(self.param_dict)
-        new_param_dict[param_to_change].generate_rand_val()
+        new_param_dict[param_to_change].cross(bee.param_dict[param_to_change])
         return new_param_dict
 
     def is_better_food(self, obj_fn_val):

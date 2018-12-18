@@ -48,3 +48,17 @@ class Parameter:
         '''
 
         self.value = SUPPORTED_DTYPES[self.dtype](self.min_val, self.max_val)
+
+    def cross(self, param):
+        '''
+        Cross this parameter's value with another one
+
+        Args:
+            param (Parameter): parameter to cross with
+        '''
+
+        assert self.dtype == param.dtype, 'Invalid types: {}, {}'.format(
+            self.dtype, param.dtype
+        )
+        self.value = self.value + abs(uniform(-1, 1)) * \
+            (self.value - param.value)

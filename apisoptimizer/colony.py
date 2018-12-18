@@ -211,10 +211,16 @@ class Colony:
 
                     continue
 
-                # Otherwise, bee is an onlooker, choose a bee to work near
+                # Bee is an onlooker, choose a modified bee to work near
                 else:
-                    chosen_bee = choice(self.__bees, p=bee_probabilities)
-                    neighbor_food = chosen_bee.mutate()
+                    bee_1 = choice(self.__bees, p=bee_probabilities)
+                    bee_2 = None
+                    while bee_2 is None or bee_2 == bee_1:
+                        bee_2 = choice(
+                            self.__bees,
+                            p=bee_probabilities
+                        )
+                    neighbor_food = bee_1.mutate(bee_2)
 
                     if self.__num_processes > 1:
                         new_onlooker_results.append(
