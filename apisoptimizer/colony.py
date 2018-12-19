@@ -124,7 +124,7 @@ class Colony:
 
         return self.__best_params
 
-    def add_param(self, name, min_val, max_val):
+    def add_param(self, name, min_val, max_val, restrict=True):
         '''
         Add a parameter for the Colony to optimize
 
@@ -132,9 +132,11 @@ class Colony:
             name (str): name of the parameter
             min_val (int or float): minimum value allowed
             max_val (int or float): maximum value allowed
+            restrict (bool): if True, restricts random values to specified
+                bounds; otherwise, no restricting
         '''
 
-        self.__params.append(Parameter(name, min_val, max_val))
+        self.__params.append(Parameter(name, min_val, max_val, restrict))
         self._logger.log('debug', 'Added parameter {}, max,min = {},{}'.format(
             name, min_val, max_val
         ))
@@ -264,7 +266,14 @@ class Colony:
                 # If the bee is an employer, scout for new food source
                 if bee.is_employer:
 
-                    self._logger.log('debug', 'Employer abandoning food')
+                    self._logger.log(
+                        'debug',
+                        'Employer abandoning food: {}'.format(
+                            [bee.param_dict.get(k).value for k in
+                             sorted(bee.param_dict.keys())
+                             if k in bee.param_dict]
+                        )
+                    )
                     new_food = self.__create_param_dict()
 
                     if self.__num_processes > 1:
@@ -290,9 +299,21 @@ class Colony:
                 # Bee is an onlooker, choose a modified bee to work near
                 else:
 
-                    self._logger.log('debug', 'Onlooker abandoning food')
+                    self._logger.log(
+                        'debug',
+                        'Onlooker abandoning food: {}'.format(
+                            [bee.param_dict.get(k).value for k in
+                             sorted(bee.param_dict.keys())
+                             if k in bee.param_dict]
+                        )
+                    )
                     chosen_bee = choice(self.__bees, p=bee_probabilities)
                     neighbor_food = chosen_bee.mutate()
+                    self._logger.log('debug', 'New food: {}'.format(
+                        [neighbor_food.get(k).value for k in
+                         sorted(neighbor_food.keys())
+                         if k in neighbor_food]
+                    ))
 
                     if self.__num_processes > 1:
                         new_onlooker_results.append(
