@@ -12,16 +12,17 @@ from multiprocessing import Pool
 
 # 3rd party, open src. imports
 from numpy.random import choice
+from colorlogging import ColorLogger
 
 # ApisOptimizer imports
-from apisoptimizer import Bee
-from apisoptimizer import Parameter
+from apisoptimizer.bee import Bee
+from apisoptimizer.parameter import Parameter
 
 
 class Colony:
 
     def __init__(self, num_employers, objective_fn, obj_fn_args=None,
-                 num_processes=1):
+                 num_processes=1, log_level='info', log_dir=None):
         '''
         Colony object: optimizes parameters for supplied objective function
 
@@ -34,6 +35,10 @@ class Colony:
             num_processes (int): number of concurrent processes for bee eval
         '''
 
+        self._logger = ColorLogger(stream_level=log_level)
+        self.log_dir = log_dir
+        self.log_level = log_level
+
         if not callable(objective_fn):
             raise ValueError('Supplied objective function not callable!')
         self.__obj_fn = objective_fn
@@ -44,6 +49,64 @@ class Colony:
         self.__num_processes = num_processes
         self.__best_fitness = 0
         self.__best_params = None
+
+    @property
+    def log_level(self):
+        '''tuple: (stream log level, file log level)
+        '''
+
+        return (self._logger.stream_level, self._logger.file_level)
+
+    @log_level.setter
+    def log_level(self, level):
+        '''Args:
+            level (str): 'disable', 'debug', 'info', 'warn', 'error', 'crit'
+        '''
+
+        self._logger.stream_level = level
+        if self.log_dir is not None:
+            self._logger.file_level = level
+
+    @property
+    def log_dir(self):
+        '''str or None: log directory, or None to disable file logging
+        '''
+
+        if self._logger.file_level == 'disable':
+            return None
+        return self._logger.log_dir
+
+    @log_dir.setter
+    def log_dir(self, log_dir):
+        '''Args:
+            log_dir (str or None): location for file logging; if None, turns
+                off file logging
+        '''
+
+        if log_dir is None:
+            self._logger.file_level = 'disable'
+        else:
+            self._logger.log_dir = log_dir
+            self._logger.file_level = self.log_level[0]
+
+    @property
+    def num_processes(self):
+        '''Returns int: number of processors Server will utilize for training,
+            tuning, and input dim reduction
+        '''
+
+        return self.__num_processes
+
+    @num_processes.setter
+    def num_processes(self, num):
+        '''Args:
+            num (int): number of processes to utilize for training, tuning,
+                and input dim reduction
+        '''
+
+        assert type(num) is int, \
+            'Invalid process number type: {}'.format(type(num))
+        self.__num_processes = num
 
     @property
     def best_fitness(self):
@@ -72,6 +135,9 @@ class Colony:
         '''
 
         self.__params.append(Parameter(name, min_val, max_val))
+        self._logger.log('debug', 'Added parameter {}, max,min = {},{}'.format(
+            name, min_val, max_val
+        ))
 
     def initialize(self):
         '''
@@ -83,6 +149,13 @@ class Colony:
             raise Exception(
                 'Parameters must be added before bee positions are found'
             )
+
+        self._logger.log('info', 'Initializing population of size {}'.format(
+            self.__num_employers * 2
+        ))
+        self._logger.log('debug', 'Initializing {} employer bees'.format(
+                self.__num_employers
+        ))
 
         if self.__num_processes > 1:
             emp_process_pool = Pool(processes=self.__num_processes)
@@ -124,6 +197,10 @@ class Colony:
 
         # Calculate probabilities of employer being chosen by onlookers
         employer_probabilities = self.__calc_bee_probs()
+
+        self._logger.log('debug', 'Initializing {} onlooker bees'.format(
+            self.__num_employers
+        ))
 
         # Generate onlooker bees
         onlookers = []
@@ -168,8 +245,8 @@ class Colony:
         if len(self.__bees) == 0:
             raise Exception('Initial bee positions must be generated first')
 
+        self._logger.log('info', 'Running search iteration')
         bee_probabilities = self.__calc_bee_probs()
-
         next_generation = []
 
         if self.__num_processes > 1:
@@ -187,6 +264,7 @@ class Colony:
                 # If the bee is an employer, scout for new food source
                 if bee.is_employer:
 
+                    self._logger.log('debug', 'Employer abandoning food')
                     new_food = self.__create_param_dict()
 
                     if self.__num_processes > 1:
@@ -209,18 +287,12 @@ class Colony:
                             is_employer=True
                         ))
 
-                    continue
-
                 # Bee is an onlooker, choose a modified bee to work near
                 else:
-                    bee_1 = choice(self.__bees, p=bee_probabilities)
-                    bee_2 = None
-                    while bee_2 is None or bee_2 == bee_1:
-                        bee_2 = choice(
-                            self.__bees,
-                            p=bee_probabilities
-                        )
-                    neighbor_food = bee_1.mutate(bee_2)
+
+                    self._logger.log('debug', 'Onlooker abandoning food')
+                    chosen_bee = choice(self.__bees, p=bee_probabilities)
+                    neighbor_food = chosen_bee.mutate()
 
                     if self.__num_processes > 1:
                         new_onlooker_results.append(
@@ -244,10 +316,12 @@ class Colony:
                             len(self.__params) * self.__num_employers
                         ))
 
-                    continue
+                continue
 
             # Not marked for abandonment, search for a food source near
             #   its current one
+
+            self._logger.log('debug', 'Bee searching neighboring food source')
             neighbor_food = bee.mutate()
 
             if self.__num_processes > 1:
@@ -265,6 +339,18 @@ class Colony:
 
                 # If new food is better than current food
                 if bee.is_better_food(obj_fn_val):
+                    self._logger.log(
+                        'debug',
+                        'Found better food: {} -> {}, {} -> {}'.format(
+                            bee.obj_fn_val,
+                            new_pos[1],
+                            [bee.param_dict.get(k).value for k in
+                             sorted(bee.param_dict.keys())
+                             if k in bee.param_dict],
+                            [new_pos.get(k).value for k in
+                             sorted(new_pos.keys()) if k in new_pos]
+                        )
+                    )
                     if bee.is_employer:
                         bee = Bee(
                             neighbor_food,
@@ -282,6 +368,7 @@ class Colony:
                 # New food not better, check if food source is exhausted
                 #   (if exhausted, mark for abandonment)
                 else:
+                    self._logger.log('debug', 'Fitness did not improve')
                     bee.check_abandonment()
 
                 next_generation.append(bee)
@@ -309,7 +396,20 @@ class Colony:
                 ))
 
             for idx, bee in enumerate(current_positions):
-                if bee.is_better_food(new_position_results[idx].get()[1]):
+                new_pos = new_position_results[idx].get()
+                if bee.is_better_food(new_pos[1]):
+                    self._logger.log(
+                        'debug',
+                        'Found better food: {} -> {}, {} -> {}'.format(
+                            bee.obj_fn_val,
+                            new_pos[1],
+                            [bee.param_dict.get(k).value for k in
+                             sorted(bee.param_dict.keys())
+                             if k in bee.param_dict],
+                            [new_pos[0].get(k).value for k
+                             in sorted(new_pos[0].keys()) if k in new_pos[0]]
+                        )
+                    )
                     if bee.is_employer:
                         next_generation.append(Bee(
                             new_position_results[idx].get()[0],
@@ -325,6 +425,7 @@ class Colony:
                         ))
 
                 else:
+                    self._logger.log('debug', 'Fitness did not improve')
                     bee.check_abandonment()
                     next_generation.append(bee)
 
@@ -357,18 +458,19 @@ class Colony:
 
         for bee in self.__bees:
             if bee.fitness_score > self.__best_fitness:
+                self._logger.log(
+                    'debug',
+                    'New best performer: {}, {}'.format(
+                        bee.obj_fn_val,
+                        [bee.param_dict.get(k).value for k in
+                         sorted(bee.param_dict.keys()) if k in bee.param_dict]
+                    )
+                )
                 self.__best_fitness = bee.fitness_score
                 params = {}
                 for param in bee.param_dict:
                     params[param] = bee.param_dict[param].value
                 self.__best_params = params
-
-    def __ave_bee_fitness(self):
-        '''
-        Returns average fitness of entire colony
-        '''
-
-        return sum(b.fitness_score for b in self.__bees) / len(self.__bees)
 
     def __calc_bee_probs(self):
         '''
@@ -383,6 +485,7 @@ class Colony:
             bee_probabilities.append(
                 bee.fitness_score / sum(b.fitness_score for b in self.__bees)
             )
+        self._logger.log('debug', 'Bee probabilities generated')
         return bee_probabilities
 
     def __create_param_dict(self):
@@ -398,4 +501,8 @@ class Colony:
         for param in self.__params:
             param_dict[param.name] = deepcopy(param)
             param_dict[param.name].generate_rand_val()
+        self._logger.log('debug', 'Generated random parameters: {}'.format(
+            [param_dict.get(k).value for k in
+             sorted(param_dict.keys()) if k in param_dict]
+        ))
         return param_dict
