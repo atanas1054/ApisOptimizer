@@ -46,7 +46,7 @@ class Bee:
             randint(0, len(self.param_dict) - 1)
         ]
         new_param_dict = deepcopy(self.param_dict)
-        new_param_dict[param_to_change].generate_rand_val()
+        new_param_dict[param_to_change].mutate()
         return new_param_dict
 
     def is_better_food(self, obj_fn_val):

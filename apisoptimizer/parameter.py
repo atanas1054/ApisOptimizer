@@ -17,7 +17,7 @@ SUPPORTED_DTYPES = {
 
 class Parameter:
 
-    def __init__(self, name, min_val, max_val):
+    def __init__(self, name, min_val, max_val, restrict):
         '''
         Parameter object: houses information for a parameter added to a Colony
 
@@ -31,6 +31,7 @@ class Parameter:
         self.name = name
         self.min_val = min_val
         self.max_val = max_val
+        self.restrict = restrict
         if type(min_val) != type(max_val):
             raise ValueError('Supplied min_val is not the same type as\
                              supplied max_val: {}, {}'.format(
@@ -47,18 +48,25 @@ class Parameter:
         Generates a random value for the parameter between min_val and max_val
         '''
 
-        self.value = SUPPORTED_DTYPES[self.dtype](self.min_val, self.max_val)
+        self.value = self.__randval()
 
-    def cross(self, param):
+    def mutate(self):
         '''
-        Cross this parameter's value with another one
-
-        Args:
-            param (Parameter): parameter to cross with
+        Mutate parameter (find neighbor)
         '''
 
-        assert self.dtype == param.dtype, 'Invalid types: {}, {}'.format(
-            self.dtype, param.dtype
+        self.value = self.dtype(
+            self.value + uniform(-1, 1) * (self.value - self.__randval())
         )
-        self.value = self.value + abs(uniform(-1, 1)) * \
-            (self.value - param.value)
+        if self.restrict:
+            if self.value > self.max_val:
+                self.value = self.max_val
+            elif self.value < self.min_val:
+                self.value = self.min_val
+
+    def __randval(self):
+        '''
+        Calculate random value
+        '''
+
+        return SUPPORTED_DTYPES[self.dtype](self.min_val, self.max_val)
