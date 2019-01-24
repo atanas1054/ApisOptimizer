@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# bee.py (0.2.1)
+# bee.py (0.3.0)
 #
-# Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
+# Developed in 2019 by Travis Kessler <travis.j.kessler@gmail.com>
 #
 
 # Stdlib imports
@@ -29,6 +29,7 @@ class Bee:
 
         self.param_dict = param_dict
         self.fitness_score = self.__calc_fitness_score(obj_fn_val)
+        self.obj_fn_val = obj_fn_val
         self.is_employer = is_employer
         self.__stay_count = 0
         self.__stay_limit = stay_limit
@@ -37,7 +38,6 @@ class Bee:
     def mutate(self):
         '''
         Mutates one random parameter in self.param_dict
-
         Returns:
             dictionary: new param_dict with one mutated parameter
         '''
@@ -46,7 +46,7 @@ class Bee:
             randint(0, len(self.param_dict) - 1)
         ]
         new_param_dict = deepcopy(self.param_dict)
-        new_param_dict[param_to_change].generate_rand_val()
+        new_param_dict[param_to_change].mutate()
         return new_param_dict
 
     def is_better_food(self, obj_fn_val):

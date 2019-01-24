@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# parameter.py (0.2.1)
+# parameter.py (0.3.0)
 #
-# Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
+# Developed in 2019 by Travis Kessler <travis.j.kessler@gmail.com>
 #
 
 # Stdlib imports
 from random import randint, uniform
+from copy import deepcopy
 
 SUPPORTED_DTYPES = {
     int: randint,
@@ -17,7 +18,7 @@ SUPPORTED_DTYPES = {
 
 class Parameter:
 
-    def __init__(self, name, min_val, max_val):
+    def __init__(self, name, min_val, max_val, restrict):
         '''
         Parameter object: houses information for a parameter added to a Colony
 
@@ -31,6 +32,7 @@ class Parameter:
         self.name = name
         self.min_val = min_val
         self.max_val = max_val
+        self.restrict = restrict
         if type(min_val) != type(max_val):
             raise ValueError('Supplied min_val is not the same type as\
                              supplied max_val: {}, {}'.format(
@@ -47,4 +49,29 @@ class Parameter:
         Generates a random value for the parameter between min_val and max_val
         '''
 
-        self.value = SUPPORTED_DTYPES[self.dtype](self.min_val, self.max_val)
+        self.value = self.__randval()
+
+    def mutate(self):
+        '''
+        Mutate parameter (find neighbor)
+        '''
+
+        curr_val = deepcopy(self.value)
+        self.value = self.dtype(
+            self.value + uniform(-1, 1) * (self.value - self.__randval())
+        )
+        if self.restrict:
+            if self.value > self.max_val:
+                self.value = self.max_val
+            elif self.value < self.min_val:
+                self.value = self.min_val
+            if self.value == curr_val:
+                self.value = curr_val
+                self.mutate()
+
+    def __randval(self):
+        '''
+        Calculate random value
+        '''
+
+        return SUPPORTED_DTYPES[self.dtype](self.min_val, self.max_val)
