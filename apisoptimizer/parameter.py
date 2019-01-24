@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# parameter.py (0.2.1)
+# parameter.py (0.3.0)
 #
-# Developed in 2018 by Travis Kessler <travis.j.kessler@gmail.com>
+# Developed in 2019 by Travis Kessler <travis.j.kessler@gmail.com>
 #
 
 # Stdlib imports
 from random import randint, uniform
+from copy import deepcopy
 
 SUPPORTED_DTYPES = {
     int: randint,
@@ -55,6 +56,7 @@ class Parameter:
         Mutate parameter (find neighbor)
         '''
 
+        curr_val = deepcopy(self.value)
         self.value = self.dtype(
             self.value + uniform(-1, 1) * (self.value - self.__randval())
         )
@@ -63,6 +65,9 @@ class Parameter:
                 self.value = self.max_val
             elif self.value < self.min_val:
                 self.value = self.min_val
+            if self.value == curr_val:
+                self.value = curr_val
+                self.mutate()
 
     def __randval(self):
         '''
