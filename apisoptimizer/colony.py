@@ -124,6 +124,22 @@ class Colony:
 
         return self.__best_params
 
+    @property
+    def average_fitness(self):
+        '''
+        Average fitness score for the colony
+        '''
+
+        return (sum([b.fitness_score for b in self.__bees]) / len(self.__bees))
+
+    @property
+    def ave_obj_fn_val(self):
+        '''
+        Average objective function value for the colony
+        '''
+
+        return (sum([b.obj_fn_val for b in self.__bees]) / len(self.__bees))
+
     def add_param(self, name, min_val, max_val, restrict=True):
         '''
         Add a parameter for the Colony to optimize
