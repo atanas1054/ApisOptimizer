@@ -293,6 +293,8 @@ Best fitness: 1.0
 Best parameters: {'int1': 0, 'int2': 0, 'int3': 0}
 ```
 
+To run this script yourself, head over to our [examples](https://github.com/tjkessler/ApisOptimizer/tree/master/examples) directory.
+
 # Contributing, Reporting Issues and Other Support:
 
 To contribute to ApisOptimizer, make a pull request. Contributions should include tests for new features added, as well as extensive documentation.
