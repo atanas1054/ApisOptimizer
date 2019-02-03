@@ -163,7 +163,7 @@ class Colony:
         self.__params.append(Parameter(name, min_val, max_val, restrict))
         self._logger.log('debug', 'Added parameter {}, max,min = {},{}'.format(
             name, min_val, max_val
-        ), call_loc={'call_loc': 'PARAM'})
+        ), call_loc='PARAM')
 
     def initialize(self):
         '''
@@ -178,10 +178,10 @@ class Colony:
 
         self._logger.log('info', 'Initializing population of size {}'.format(
             self.__num_employers * 2
-        ), call_loc={'call_loc': 'INIT'})
+        ), call_loc='INIT')
         self._logger.log('debug', 'Initializing {} employer bees'.format(
                 self.__num_employers
-        ), call_loc={'call_loc': 'INIT'})
+        ), call_loc='INIT')
 
         if self.__num_processes > 1:
             emp_process_pool = Pool(processes=self.__num_processes)
@@ -226,7 +226,7 @@ class Colony:
 
         self._logger.log('debug', 'Initializing {} onlooker bees'.format(
             self.__num_employers
-        ), call_loc={'call_loc': 'INIT'})
+        ), call_loc='INIT')
 
         # Generate onlooker bees
         onlookers = []
@@ -274,7 +274,7 @@ class Colony:
         self._logger.log(
             'info',
             'Running search iteration',
-            call_loc={'call_loc': 'SEARCH'}
+            call_loc='SEARCH'
         )
         bee_probabilities = self.__calc_bee_probs()
         next_generation = []
@@ -301,7 +301,7 @@ class Colony:
                              sorted(bee.param_dict.keys())
                              if k in bee.param_dict]
                         ),
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     new_food = self.__create_param_dict()
 
@@ -335,7 +335,7 @@ class Colony:
                              sorted(bee.param_dict.keys())
                              if k in bee.param_dict]
                         ),
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     chosen_bee = choice(self.__bees, p=bee_probabilities)
                     neighbor_food = chosen_bee.mutate()
@@ -343,7 +343,7 @@ class Colony:
                         [neighbor_food.get(k).value for k in
                          sorted(neighbor_food.keys())
                          if k in neighbor_food]
-                    ), call_loc={'call_loc': 'SEARCH'})
+                    ), call_loc='SEARCH')
 
                     if self.__num_processes > 1:
                         new_onlooker_results.append(
@@ -375,7 +375,7 @@ class Colony:
             self._logger.log(
                 'debug',
                 'Bee searching neighboring food source',
-                call_loc={'call_loc': 'SEARCH'}
+                call_loc='SEARCH'
             )
             neighbor_food = bee.mutate()
 
@@ -406,7 +406,7 @@ class Colony:
                              sorted(neighbor_food.keys()) if k in
                              neighbor_food]
                         ),
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     if bee.is_employer:
                         bee = Bee(
@@ -428,7 +428,7 @@ class Colony:
                     self._logger.log(
                         'debug',
                         'Fitness did not improve',
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     bee.check_abandonment()
 
@@ -472,7 +472,7 @@ class Colony:
                             [new_pos[0].get(k).value for k
                              in sorted(new_pos[0].keys()) if k in new_pos[0]]
                         ),
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     if bee.is_employer:
                         next_generation.append(Bee(
@@ -492,7 +492,7 @@ class Colony:
                     self._logger.log(
                         'debug',
                         'Fitness did not improve',
-                        call_loc={'call_loc': 'SEARCH'}
+                        call_loc='SEARCH'
                     )
                     bee.check_abandonment()
                     next_generation.append(bee)
@@ -533,7 +533,7 @@ class Colony:
                         [bee.param_dict.get(k).value for k in
                          sorted(bee.param_dict.keys()) if k in bee.param_dict]
                     ),
-                    call_loc={'call_loc': 'UPDATE'}
+                    call_loc='UPDATE'
                 )
                 self.__best_fitness = bee.fitness_score
                 params = {}
@@ -557,7 +557,7 @@ class Colony:
         self._logger.log(
             'debug',
             'Onlooker choice probabilities generated',
-            call_loc={'call_loc': 'CALC'}
+            call_loc='CALC'
         )
         return bee_probabilities
 
@@ -577,5 +577,5 @@ class Colony:
         self._logger.log('debug', 'Generated random parameters: {}'.format(
             [param_dict.get(k).value for k in
              sorted(param_dict.keys()) if k in param_dict]
-        ), call_loc={'call_loc': 'CREATE'})
+        ), call_loc='CREATE')
         return param_dict
