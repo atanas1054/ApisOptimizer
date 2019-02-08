@@ -530,7 +530,7 @@ class Colony:
                     'info',
                     'New best performer: {}, {}'.format(
                         bee.obj_fn_val,
-                        [bee.param_dict.get(k).value for k in
+                        [(k, bee.param_dict.get(k).value) for k in
                          sorted(bee.param_dict.keys()) if k in bee.param_dict]
                     ),
                     call_loc='UPDATE'
