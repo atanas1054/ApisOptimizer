@@ -23,6 +23,11 @@ Alternatively, in a Windows or virtualenv environment:
 pip install apisoptimizer
 ```
 
+To install with support for console/file logging:
+```
+pip install apisoptimizer[with_colorlogging]
+```
+
 Note: if multiple Python releases are installed on your system (e.g. 2.7 and 3.6), you may need to execute the correct version of pip. For Python 3.6, change **"pip install apisoptimizer"** to **"pip3 install apisoptimizer"**.
 
 ### Method 2: From source
@@ -153,7 +158,7 @@ print(abc.best_fitness)
 print(abc.best_parameters)
 ```
 
-ApisOptimizer will not log process status messages to the console by default. If you would like to log when the colony is initialized, when a search cycle is conducted and when a new best-performing food source is found, import the logger and set the stream level to 'info':
+If you have the ColorLogging package installed, ApisOptimizer will not log process status messages to the console by default. If you would like to log when the colony is initialized, when a search cycle is conducted and when a new best-performing food source is found, import the logger and set the stream level to 'info':
 ```python
 from apisoptimizer import logger
 
