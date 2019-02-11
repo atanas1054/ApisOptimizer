@@ -153,36 +153,35 @@ print(abc.best_fitness)
 print(abc.best_parameters)
 ```
 
-ApisOptimizer will log process status messages to the console by default at log level 'info'. These messages include when the colony is initialized, when a search cycle is conducted and when a new best-performing food source is found.
-
-To run the colony in 'debug' mode (logs processes such as generating random values, when bees find better food sources, and whether a bee abandons its food source), supply the "log_level" argument when initializing the colony or by setting the level:
-
+ApisOptimizer will not log process status messages to the console by default. If you would like to log when the colony is initialized, when a search cycle is conducted and when a new best-performing food source is found, import the logger and set the stream level to 'info':
 ```python
-abc = Colony(10, minimize_integers, log_level='debug')
-# or
-abc.log_level = 'debug'
+from apisoptimizer import logger
+
+logger.stream_level = 'info'
 ```
 
-To disable logging, use "disable":
+To run the colony in 'debug' mode (logs processes such as generating random values, when bees find better food sources, and whether a bee abandons its food source), set the stream level to 'debug':
 
 ```python
-abc = Colony(10, minimize_integers, log_level='disable')
-# or
-abc.log_level = 'disable'
+from apisoptimizer import logger
+
+logger.stream_level = 'debug'
 ```
 
-If file logging is desired, specify a "log_dir" (directory to where the log file is saved):
+If file logging is desired, specify the file logging level:
 
 ```python
-abc = Colony(10, minimize_integers, log_level='debug', log_dir='path/to/logs')
-# or
-abc.log_dir = 'path/to/logs'
+from apisoptimizer import logger
+
+logger.file_level = 'info'
 ```
 
-File logging is disabled until a path is supplied. To disable file logging after enabling, use:
-
+By default, log files will be saved to a "logs" folder in your current working directory. To specify a different path:
 ```python
-abc.log_dir = None
+from apisoptimizer import logger
+
+logger.file_level = 'info'
+logger.log_dir = 'path\to\my\log\directory'
 ```
 
 ApisOptimizer can utilize multiple CPU cores for concurrent processing:
@@ -196,6 +195,7 @@ Tying everything together, we have:
 
 ```python
 from apisoptimizer import Colony
+from apisoptimizer import logger
 
 def minimize_integers(integers, args=None):
 
@@ -205,6 +205,7 @@ def minimize_integers(integers, args=None):
         integers['int3'].value
     )
 
+logger.stream_level = 'info'
 abc = Colony(10, minimize_integers)
 abc.add_param('int1', 0, 10)
 abc.add_param('int2', 0, 10)
@@ -221,83 +222,82 @@ for _ in range(10):
 And running this script produces:
 
 ```bash
-[17:32:24] [INIT] [INFO] Initializing population of size 20
-[17:32:24] [UPDATE] [INFO] New best performer: 15, [8, 2, 5]
-[17:32:24] [UPDATE] [INFO] New best performer: 13, [1, 5, 7]
-[17:32:24] [UPDATE] [INFO] New best performer: 12, [7, 3, 2]
-[17:32:24] [UPDATE] [INFO] New best performer: 10, [0, 7, 3]
-[17:32:24] [SEARCH] [INFO] Running search iteration
-[17:32:24] [UPDATE] [INFO] New best performer: 6, [0, 3, 3]
+[13:31:12] [INIT] [INFO] Initializing population of size 20
+[13:31:12] [UPDATE] [INFO] New best performer: 12, [('int1', 7), ('int2', 2), ('int3', 3)]
+[13:31:12] [UPDATE] [INFO] New best performer: 10, [('int1', 0), ('int2', 8), ('int3', 2)]
+[13:31:12] [UPDATE] [INFO] New best performer: 8, [('int1', 0), ('int2', 0), ('int3', 8)]
+[13:31:12] [SEARCH] [INFO] Running search iteration
+[13:31:12] [UPDATE] [INFO] New best performer: 7, [('int1', 2), ('int2', 2), ('int3', 3)]
 
-Average colony fitness: 0.07746727021688321
-Average return value: 12.75
-Best fitness: 0.14285714285714285
-Best parameters: {'int1': 0, 'int2': 3, 'int3': 3}
+Average colony fitness: 0.0718731309683322
+Average return value: 15.25
+Best fitness: 0.125
+Best parameters: {'int1': 2, 'int2': 2, 'int3': 3}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
-[17:32:24] [UPDATE] [INFO] New best performer: 5, [0, 3, 2]
+[13:31:12] [SEARCH] [INFO] Running search iteration
+[13:31:12] [UPDATE] [INFO] New best performer: 5, [('int1', 2), ('int2', 0), ('int3', 3)]
 
-Average colony fitness: 0.09114639746218692
-Average return value: 11.4
+Average colony fitness: 0.07727287908170262
+Average return value: 14.55
 Best fitness: 0.16666666666666666
-Best parameters: {'int1': 0, 'int2': 3, 'int3': 2}
+Best parameters: {'int1': 2, 'int2': 0, 'int3': 3}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
+[13:31:12] [SEARCH] [INFO] Running search iteration
 
-Average colony fitness: 0.09871429224370401
-Average return value: 10.5
+Average colony fitness: 0.08393703799042675
+Average return value: 13.4
 Best fitness: 0.16666666666666666
-Best parameters: {'int1': 0, 'int2': 3, 'int3': 2}
+Best parameters: {'int1': 2, 'int2': 0, 'int3': 3}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
-[17:32:24] [UPDATE] [INFO] New best performer: 4, [1, 3, 0]
+[13:31:12] [SEARCH] [INFO] Running search iteration
+[13:31:12] [UPDATE] [INFO] New best performer: 3, [('int1', 2), ('int2', 0), ('int3', 1)]
 
-Average colony fitness: 0.11266520244461424
-Average return value: 9.2
-Best fitness: 0.2
-Best parameters: {'int1': 1, 'int2': 3, 'int3': 0}
+Average colony fitness: 0.09531225346123047
+Average return value: 12.2
+Best fitness: 0.25
+Best parameters: {'int1': 2, 'int2': 0, 'int3': 1}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
-[17:32:24] [UPDATE] [INFO] New best performer: 1, [1, 0, 0]
+[13:31:12] [SEARCH] [INFO] Running search iteration
 
-Average colony fitness: 0.13920815295815298
-Average return value: 8.25
+Average colony fitness: 0.1050586861538874
+Average return value: 11.2
+Best fitness: 0.25
+Best parameters: {'int1': 2, 'int2': 0, 'int3': 1}
+
+[13:31:12] [SEARCH] [INFO] Running search iteration
+
+Average colony fitness: 0.11243232859331928
+Average return value: 10.45
+Best fitness: 0.25
+Best parameters: {'int1': 2, 'int2': 0, 'int3': 1}
+
+[13:31:12] [SEARCH] [INFO] Running search iteration
+[13:31:12] [UPDATE] [INFO] New best performer: 1, [('int1', 0), ('int2', 0), ('int3', 1)]
+
+Average colony fitness: 0.14588915470494418
+Average return value: 9.6
 Best fitness: 0.5
-Best parameters: {'int1': 1, 'int2': 0, 'int3': 0}
+Best parameters: {'int1': 0, 'int2': 0, 'int3': 1}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
+[13:31:12] [SEARCH] [INFO] Running search iteration
+[13:31:12] [UPDATE] [INFO] New best performer: 0, [('int1', 0), ('int2', 0), ('int3', 0)]
 
-Average colony fitness: 0.16593129093129097
-Average return value: 6.8
-Best fitness: 0.5
-Best parameters: {'int1': 1, 'int2': 0, 'int3': 0}
-
-[17:32:24] [SEARCH] [INFO] Running search iteration
-[17:32:24] [UPDATE] [INFO] New best performer: 0, [0, 0, 0]
-
-Average colony fitness: 0.20809093684093688
-Average return value: 6.15
+Average colony fitness: 0.17261901905284258
+Average return value: 9.05
 Best fitness: 1.0
 Best parameters: {'int1': 0, 'int2': 0, 'int3': 0}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
+[13:31:12] [SEARCH] [INFO] Running search iteration
 
-Average colony fitness: 0.23672008547008555
-Average return value: 5.55
+Average colony fitness: 0.1873122863118993
+Average return value: 8.45
 Best fitness: 1.0
 Best parameters: {'int1': 0, 'int2': 0, 'int3': 0}
 
-[17:32:24] [SEARCH] [INFO] Running search iteration
+[13:31:13] [SEARCH] [INFO] Running search iteration
 
-Average colony fitness: 0.28047494172494175
-Average return value: 4.6
-Best fitness: 1.0
-Best parameters: {'int1': 0, 'int2': 0, 'int3': 0}
-
-[17:32:24] [SEARCH] [INFO] Running search iteration
-
-Average colony fitness: 0.339011544011544
-Average return value: 3.9
+Average colony fitness: 0.2611601307189543
+Average return value: 7.2
 Best fitness: 1.0
 Best parameters: {'int1': 0, 'int2': 0, 'int3': 0}
 ```
