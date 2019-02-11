@@ -1,4 +1,5 @@
 from apisoptimizer.colony import Colony
 from apisoptimizer.bee import Bee
 from apisoptimizer.parameter import Parameter
-__version__ = '0.3.0'
+from apisoptimizer.logging import logger
+__version__ = '0.3.1'

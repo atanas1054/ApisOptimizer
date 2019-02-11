@@ -14,20 +14,29 @@ ApisOptimizer is an open source Python package used to tune parameters for user-
 
 ### Method 1: pip
 If you are working in a Linux/Mac environment:
-- **sudo pip install apisoptimizer**
+```
+sudo pip install apisoptimizer
+```
 
 Alternatively, in a Windows or virtualenv environment:
-- **pip install apisoptimizer**
+```
+pip install apisoptimizer
+```
 
 Note: if multiple Python releases are installed on your system (e.g. 2.7 and 3.6), you may need to execute the correct version of pip. For Python 3.6, change **"pip install apisoptimizer"** to **"pip3 install apisoptimizer"**.
 
 ### Method 2: From source
-- Download the ApisOptimizer repository, navigate to the download location on the command line/terminal, and execute 
-**"python setup.py install"**. 
+- Download the ApisOptimizer repository, navigate to the download location on the command line/terminal, and execute:
+```
+python setup.py install
+```
 
 Additional package dependencies (ColorLogging, NumPy) will be installed during the ApisOptimizer installation process.
 
-To update your version of ApisOptimizer to the latest release version, use "**pip install --upgrade apisoptimizer**".
+To update your version of ApisOptimizer to the latest release version, use:
+```
+pip install --upgrade apisoptimizer
+```
 
 # Usage:
 
