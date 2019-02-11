@@ -12,17 +12,17 @@ from multiprocessing import Pool
 
 # 3rd party, open src. imports
 from numpy.random import choice
-from colorlogging import ColorLogger
 
 # ApisOptimizer imports
 from apisoptimizer.bee import Bee
 from apisoptimizer.parameter import Parameter
+from apisoptimizer.logging import logger
 
 
 class Colony:
 
     def __init__(self, num_employers, objective_fn, obj_fn_args=None,
-                 num_processes=1, log_level='info', log_dir=None):
+                 num_processes=1):
         '''
         Colony object: optimizes parameters for supplied objective function
 
@@ -33,15 +33,7 @@ class Colony:
             obj_fn_args (any): any additional arguments for user's objective
                                function
             num_processes (int): number of concurrent processes for bee eval
-            log_level (str): log level for process status messages; 'debug',
-                'info', 'warn', 'error', 'crit'
-            log_dir (str): if file logging is desired, this is the directory a
-                log file is saved to (defaults to None, no file logging)
         '''
-
-        self._logger = ColorLogger(stream_level=log_level)
-        self.log_dir = log_dir
-        self.log_level = log_level
 
         if not callable(objective_fn):
             raise ValueError('Supplied objective function not callable!')
@@ -53,45 +45,6 @@ class Colony:
         self.__num_processes = num_processes
         self.__best_fitness = 0
         self.__best_params = None
-
-    @property
-    def log_level(self):
-        '''tuple: (stream log level, file log level)
-        '''
-
-        return (self._logger.stream_level, self._logger.file_level)
-
-    @log_level.setter
-    def log_level(self, level):
-        '''Args:
-            level (str): 'disable', 'debug', 'info', 'warn', 'error', 'crit'
-        '''
-
-        self._logger.stream_level = level
-        if self.log_dir is not None:
-            self._logger.file_level = level
-
-    @property
-    def log_dir(self):
-        '''str or None: log directory, or None to disable file logging
-        '''
-
-        if self._logger.file_level == 'disable':
-            return None
-        return self._logger.log_dir
-
-    @log_dir.setter
-    def log_dir(self, log_dir):
-        '''Args:
-            log_dir (str or None): location for file logging; if None, turns
-                off file logging
-        '''
-
-        if log_dir is None:
-            self._logger.file_level = 'disable'
-        else:
-            self._logger.log_dir = log_dir
-            self._logger.file_level = self.log_level[0]
 
     @property
     def num_processes(self):
@@ -161,7 +114,7 @@ class Colony:
         '''
 
         self.__params.append(Parameter(name, min_val, max_val, restrict))
-        self._logger.log('debug', 'Added parameter {}, max,min = {},{}'.format(
+        logger.log('debug', 'Added parameter {}, max,min = {},{}'.format(
             name, min_val, max_val
         ), call_loc='PARAM')
 
@@ -176,10 +129,10 @@ class Colony:
                 'Parameters must be added before bee positions are found'
             )
 
-        self._logger.log('info', 'Initializing population of size {}'.format(
+        logger.log('info', 'Initializing population of size {}'.format(
             self.__num_employers * 2
         ), call_loc='INIT')
-        self._logger.log('debug', 'Initializing {} employer bees'.format(
+        logger.log('debug', 'Initializing {} employer bees'.format(
                 self.__num_employers
         ), call_loc='INIT')
 
@@ -224,7 +177,7 @@ class Colony:
         # Calculate probabilities of employer being chosen by onlookers
         employer_probabilities = self.__calc_bee_probs()
 
-        self._logger.log('debug', 'Initializing {} onlooker bees'.format(
+        logger.log('debug', 'Initializing {} onlooker bees'.format(
             self.__num_employers
         ), call_loc='INIT')
 
@@ -271,7 +224,7 @@ class Colony:
         if len(self.__bees) == 0:
             raise Exception('Initial bee positions must be generated first')
 
-        self._logger.log(
+        logger.log(
             'info',
             'Running search iteration',
             call_loc='SEARCH'
@@ -294,7 +247,7 @@ class Colony:
                 # If the bee is an employer, scout for new food source
                 if bee.is_employer:
 
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Employer abandoning food: {}'.format(
                             [bee.param_dict.get(k).value for k in
@@ -328,7 +281,7 @@ class Colony:
                 # Bee is an onlooker, choose a modified bee to work near
                 else:
 
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Onlooker abandoning food: {}'.format(
                             [bee.param_dict.get(k).value for k in
@@ -339,7 +292,7 @@ class Colony:
                     )
                     chosen_bee = choice(self.__bees, p=bee_probabilities)
                     neighbor_food = chosen_bee.mutate()
-                    self._logger.log('debug', 'New food: {}'.format(
+                    logger.log('debug', 'New food: {}'.format(
                         [neighbor_food.get(k).value for k in
                          sorted(neighbor_food.keys())
                          if k in neighbor_food]
@@ -372,7 +325,7 @@ class Colony:
             # Not marked for abandonment, search for a food source near
             #   its current one
 
-            self._logger.log(
+            logger.log(
                 'debug',
                 'Bee searching neighboring food source',
                 call_loc='SEARCH'
@@ -394,7 +347,7 @@ class Colony:
 
                 # If new food is better than current food
                 if bee.is_better_food(obj_fn_val):
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Found better food: {} -> {}, {} -> {}'.format(
                             bee.obj_fn_val,
@@ -425,7 +378,7 @@ class Colony:
                 # New food not better, check if food source is exhausted
                 #   (if exhausted, mark for abandonment)
                 else:
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Fitness did not improve',
                         call_loc='SEARCH'
@@ -461,7 +414,7 @@ class Colony:
             for idx, bee in enumerate(current_positions):
                 new_pos = new_position_results[idx].get()
                 if bee.is_better_food(new_pos[1]):
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Found better food: {} -> {}, {} -> {}'.format(
                             bee.obj_fn_val,
@@ -489,7 +442,7 @@ class Colony:
                         ))
 
                 else:
-                    self._logger.log(
+                    logger.log(
                         'debug',
                         'Fitness did not improve',
                         call_loc='SEARCH'
@@ -526,7 +479,7 @@ class Colony:
 
         for bee in self.__bees:
             if bee.fitness_score > self.__best_fitness:
-                self._logger.log(
+                logger.log(
                     'info',
                     'New best performer: {}, {}'.format(
                         bee.obj_fn_val,
@@ -554,7 +507,7 @@ class Colony:
             bee_probabilities.append(
                 bee.fitness_score / sum(b.fitness_score for b in self.__bees)
             )
-        self._logger.log(
+        logger.log(
             'debug',
             'Onlooker choice probabilities generated',
             call_loc='CALC'
@@ -574,7 +527,7 @@ class Colony:
         for param in self.__params:
             param_dict[param.name] = deepcopy(param)
             param_dict[param.name].generate_rand_val()
-        self._logger.log('debug', 'Generated random parameters: {}'.format(
+        logger.log('debug', 'Generated random parameters: {}'.format(
             [param_dict.get(k).value for k in
              sorted(param_dict.keys()) if k in param_dict]
         ), call_loc='CREATE')
