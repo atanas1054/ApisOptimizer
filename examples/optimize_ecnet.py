@@ -1,79 +1,65 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# optimize_ecnet.py
+#
+# Example script, optimize the following neural network learning/architecture
+#   hyperparameters for Cetane Number prediction:
+#   - Learning rate
+#   - Learning rate decay
+#   - Neurons per hidden layer
+#   - Beta_1 (Adam Optimizer)
+#   - Beta_2 (Adam Optimizer)
+#   - Epsilon (Adam Optimizer)
+#
+
 from apisoptimizer import Colony
-from ecnet.model import MultilayerPerceptron
-import ecnet.data_utils
-import ecnet.error_utils
-import multiprocessing as mp
-import matplotlib.pyplot as plt
+from apisoptimizer import logger
+from ecnet.utils.server_utils import default_config, train_model
+from ecnet.utils.data_utils import DataFrame
 
 
 def optimize_ecnet(param_dict, args):
 
-    if args['num_processes'] > 0:
-        model = MultilayerPerceptron(
-            save_path='./tmp/model_{}/model'.format(
-                mp.current_process()._identity[0] % args['num_processes']
-            )
-        )
-    else:
-        model = MultilayerPerceptron()
+    vars = default_config()
+    vars['beta_1'] = param_dict['beta_1'].value
+    vars['beta_2'] = param_dict['beta_2'].value
+    vars['epsilon'] = param_dict['epsilon'].value
+    vars['learning_rate'] = param_dict['learning_rate'].value
+    vars['decay'] = param_dict['decay'].value
+    vars['hidden_layers'][0][0] = param_dict['hidden_1'].value
+    vars['hidden_layers'][1][0] = param_dict['hidden_2'].value
 
-    df = args['DataFrame']
-    df.create_sets(True, split=[0.5, 0.3, 0.2])
-    pd = df.package_sets()
-
-    model.add_layer(len(pd.learn_x[0]), 'relu')
-    model.add_layer(param_dict['hidden_1'].value, 'relu')
-    model.add_layer(param_dict['hidden_2'].value, 'relu')
-    model.add_layer(len(pd.learn_y[0]), 'linear')
-    model.connect_layers()
-
-    model.fit_validation(
-        pd.learn_x,
-        pd.learn_y,
-        pd.valid_x,
-        pd.valid_y,
-        learning_rate=param_dict['learning_rate'].value,
-        max_epochs=param_dict['vme'].value,
-        keep_prob=param_dict['keep_prob'].value
-    )
-
-    return ecnet.error_utils.calc_rmse(
-        model.use(pd.test_x),
-        pd.test_y
-    )
+    dataframe = args['dataframe']
+    sets = dataframe.package_sets()
+    return train_model(sets, vars, 'test', 'rmse', validate=True, save=False)
 
 
 if __name__ == '__main__':
 
-    num_processes = 8
+    logger.stream_level = 'debug'
 
-    df = ecnet.data_utils.DataFrame('cn_model_v1.0.csv')
-
-    args = {
-        'DataFrame': df,
-        'num_processes': num_processes
-    }
+    dataframe = DataFrame('cn_model_v1.0.csv')
+    dataframe.create_sets()
 
     abc = Colony(
-        50,
+        10,
         optimize_ecnet,
-        obj_fn_args=args,
-        num_processes=num_processes,
-        log_level='debug',
-        log_dir='./logs'
+        obj_fn_args={'dataframe': dataframe},
+        num_processes=4
     )
 
+    abc.add_param('beta_1', 0.0, 1.0)
+    abc.add_param('beta_2', 0.0, 1.0)
+    abc.add_param('epsilon', 0.0, 1.0)
     abc.add_param('learning_rate', 0.0, 1.0)
-    abc.add_param('hidden_1', 8, 36)
-    abc.add_param('hidden_2', 8, 36)
-    abc.add_param('vme', 100, 25000)
-    abc.add_param('keep_prob', 0.001, 1.0)
+    abc.add_param('decay', 0.0, 1.0)
+    abc.add_param('hidden_1', 1, 50)
+    abc.add_param('hidden_2', 1, 50)
     abc.initialize()
-    ticks = []
-    obj_fn_vals = []
-    for i in range(500):
+    for i in range(10):
         abc.search()
-        ticks.append(i)
-        obj_fn_vals.append(abc.ave_obj_fn_val)
-    plt.plot(ticks, obj_fn_vals)
-    plt.show()
+        print('\nAverage colony fitness: {}'.format(abc.average_fitness))
+        print('Average return value: {}'.format(abc.ave_obj_fn_val))
+        print('Best fitness: {}'.format(abc.best_fitness))
+        print('Best parameters: {}\n'.format(abc.best_parameters))
